@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Job Application Tracker</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --border: #e2e5ea;
+    --text: #1b1e24;
+    --text-dim: #6b7280;
+    --accent: #2f6feb;
+    --accent-hover: #2557c4;
+    --danger: #d1453b;
+    --danger-bg: #fdecea;
+    --success: #1a7f4e;
+    --success-bg: #e9f8ef;
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161a;
+      --surface: #1c1f26;
+      --border: #2c2f38;
+      --text: #e7e9ee;
+      --text-dim: #9aa1ac;
+      --accent: #5b8def;
+      --accent-hover: #7ba1f2;
+      --danger: #f0685f;
+      --danger-bg: #3a1f1e;
+      --success: #4fce8d;
+      --success-bg: #12301f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  .wrap {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+  }
+  header { margin-bottom: 28px; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  .sub { color: var(--text-dim); font-size: 0.9rem; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+  .card h2 {
+    font-size: 1rem;
+    margin: 0 0 16px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  form { display: grid; gap: 14px; }
+  .field { display: grid; gap: 6px; }
+  label { font-size: 0.85rem; color: var(--text-dim); }
+  input {
+    font: inherit;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+  }
+  input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 520px) { .row-2 { grid-template-columns: 1fr; } }
+
+  button {
+    font: inherit;
+    font-weight: 600;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+    justify-self: start;
+  }
+  button:hover { background: var(--accent-hover); }
+  button:disabled { opacity: 0.6; cursor: default; }
+
+  .msg {
+    display: none;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    margin-top: 4px;
+  }
+  .msg.error { display: block; background: var(--danger-bg); color: var(--danger); }
+  .msg.success { display: block; background: var(--success-bg); color: var(--success); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th, td {
+    text-align: left;
+    padding: 10px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  th { color: var(--text-dim); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; }
+  tr:last-child td { border-bottom: none; }
+  td a { color: var(--accent); text-decoration: none; }
+  td a:hover { text-decoration: underline; }
+
+  .empty { color: var(--text-dim); padding: 12px 0; font-size: 0.9rem; }
+
+  .delete-btn {
+    background: transparent;
+    color: var(--danger);
+    border: 1px solid var(--border);
+    padding: 5px 10px;
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+  .delete-btn:hover { background: var(--danger-bg); }
+
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 14px;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+  }
+  .pagination .controls { display: flex; gap: 8px; }
+  .pagination button {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    font-weight: 500;
+    font-size: 0.85rem;
+  }
+  .pagination button:hover:not(:disabled) { background: var(--bg); }
+  .pagination button:disabled { opacity: 0.4; cursor: default; }
+  .status-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--success);
+    margin-right: 6px;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Job Application Tracker</h1>
+      <div class="sub"><span class="status-dot" id="statusDot"></span><span id="statusText">Checking service…</span></div>
+    </header>
+
+    <section class="card">
+      <h2>Log a new application</h2>
+      <form id="jobForm">
+        <div class="row-2">
+          <div class="field">
+            <label for="company_name">Company name</label>
+            <input id="company_name" name="company_name" required placeholder="Acme Corp">
+          </div>
+          <div class="field">
+            <label for="job_title">Job title</label>
+            <input id="job_title" name="job_title" required placeholder="Software Engineer">
+          </div>
+        </div>
+        <div class="field">
+          <label for="website_url">Job posting URL (optional)</label>
+          <input id="website_url" name="website_url" type="url" placeholder="https://…">
+        </div>
+        <button type="submit" id="submitBtn">Add job</button>
+        <div class="msg" id="formMsg"></div>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Applied jobs</h2>
+      <div id="jobsArea"><div class="empty">Loading…</div></div>
+      <div class="pagination" id="pagination" hidden>
+        <span id="pageInfo"></span>
+        <div class="controls">
+          <button type="button" id="prevPageBtn">&larr; Prev</button>
+          <button type="button" id="nextPageBtn">Next &rarr;</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+<script>
+  const form = document.getElementById('jobForm');
+  const submitBtn = document.getElementById('submitBtn');
+  const formMsg = document.getElementById('formMsg');
+  const jobsArea = document.getElementById('jobsArea');
+  const statusDot = document.getElementById('statusDot');
+  const statusText = document.getElementById('statusText');
+  const pagination = document.getElementById('pagination');
+  const pageInfo = document.getElementById('pageInfo');
+  const prevPageBtn = document.getElementById('prevPageBtn');
+  const nextPageBtn = document.getElementById('nextPageBtn');
+
+  const PAGE_SIZE = 10;
+  let currentPage = 1;
+
+  function showMsg(text, kind) {
+    formMsg.textContent = text;
+    formMsg.className = 'msg ' + kind;
+  }
+  function clearMsg() {
+    formMsg.className = 'msg';
+    formMsg.textContent = '';
+  }
+
+  async function checkHealth() {
+    try {
+      const res = await fetch('/health');
+      const data = await res.json();
+      if (res.ok && data.IsSuccess) {
+        statusDot.style.background = 'var(--success)';
+        statusText.textContent = 'Service is running';
+      } else {
+        throw new Error();
+      }
+    } catch {
+      statusDot.style.background = 'var(--danger)';
+      statusText.textContent = 'Service unavailable';
+    }
+  }
+
+  function renderJobs(jobs) {
+    if (!jobs || jobs.length === 0) {
+      jobsArea.innerHTML = '<div class="empty">No jobs logged yet.</div>';
+      return;
+    }
+    const rows = jobs.map(j => {
+      const website = j.website_url && j.website_url !== 'null'
+        ? `<a href="${j.website_url}" target="_blank" rel="noopener">View posting</a>`
+        : '<span style="color:var(--text-dim)">—</span>';
+      return `<tr>
+        <td>${escapeHtml(j.company_name)}</td>
+        <td>${escapeHtml(j.job_title)}</td>
+        <td>${website}</td>
+        <td><button type="button" class="delete-btn" data-company="${escapeHtml(j.company_name)}" data-title="${escapeHtml(j.job_title)}">Delete</button></td>
+      </tr>`;
+    }).join('');
+    jobsArea.innerHTML = `
+      <table>
+        <thead><tr><th>Company</th><th>Job title</th><th>Posting</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+
+    jobsArea.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', () => deleteJob(btn.dataset.company, btn.dataset.title));
+    });
+  }
+
+  async function deleteJob(company_name, job_title) {
+    if (!confirm(`Delete ${job_title} at ${company_name}?`)) return;
+    try {
+      const res = await fetch(`/jobs?company_name=${encodeURIComponent(company_name)}&job_title=${encodeURIComponent(job_title)}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        loadJobs(currentPage);
+      } else {
+        const data = await res.json();
+        alert(data.detail || 'Could not delete job.');
+      }
+    } catch {
+      alert('Could not reach the server.');
+    }
+  }
+
+  function escapeHtml(str) {
+    return String(str ?? '').replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+
+  async function loadJobs(page = currentPage) {
+    try {
+      const res = await fetch(`/jobs?page=${page}&page_size=${PAGE_SIZE}`);
+      const data = await res.json();
+      const { items, page: actualPage, total_pages, total_items } = data.StatusObject;
+      currentPage = actualPage;
+      renderJobs(items);
+
+      if (total_items === 0) {
+        pagination.hidden = true;
+      } else {
+        pagination.hidden = false;
+        pageInfo.textContent = `Page ${actualPage} of ${total_pages} · ${total_items} total`;
+        prevPageBtn.disabled = actualPage <= 1;
+        nextPageBtn.disabled = actualPage >= total_pages;
+      }
+    } catch {
+      jobsArea.innerHTML = '<div class="empty">Could not load jobs.</div>';
+      pagination.hidden = true;
+    }
+  }
+
+  prevPageBtn.addEventListener('click', () => loadJobs(currentPage - 1));
+  nextPageBtn.addEventListener('click', () => loadJobs(currentPage + 1));
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearMsg();
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Adding…';
+
+    const payload = {
+      company_name: form.company_name.value.trim(),
+      job_title: form.job_title.value.trim(),
+      website_url: form.website_url.value.trim() || null
+    };
+
+    try {
+      const res = await fetch('/process-job', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showMsg('Job added successfully.', 'success');
+        form.reset();
+        loadJobs(1);
+      } else {
+        showMsg(data.detail || 'Something went wrong.', 'error');
+      }
+    } catch {
+      showMsg('Could not reach the server.', 'error');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Add job';
+    }
+  });
+
+  checkHealth();
+  loadJobs();
+</script>
+</body>
+</html>
